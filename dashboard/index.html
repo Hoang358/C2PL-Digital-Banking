@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C2PL Digital Banking — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(99,179,237,0.15);
+    --accent: #63b3ed;
+    --accent2: #68d391;
+    --accent3: #fc8181;
+    --accent4: #f6ad55;
+    --text: #e2e8f0;
+    --muted: #718096;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #63b3ed22, #63b3ed44);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub  { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.5px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: #68d39122; border: 1px solid #68d39144;
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; color: var(--accent2); font-family: var(--mono);
+  }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+  /* Main layout */
+  .main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--accent); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--kpi-color, var(--accent));
+  }
+  .kpi-label { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 600; line-height: 1; color: var(--kpi-color, var(--accent)); font-family: var(--mono); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* Charts grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chart-title-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 1.25rem; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* Wide chart */
+  .chart-wide {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .chart-wide .chart-wrap { height: 200px; }
+
+  /* Architecture diagram */
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .arch-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 1.5rem 0;
+    overflow-x: auto;
+  }
+  .arch-col { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .arch-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: var(--mono);
+    text-align: center;
+    min-width: 110px;
+    position: relative;
+  }
+  .arch-node.glm {
+    background: #63b3ed18;
+    border-color: var(--accent);
+    border-width: 2px;
+    min-width: 140px;
+    padding: 14px 18px;
+  }
+  .arch-node .node-label { color: var(--muted); font-size: 10px; margin-bottom: 3px; }
+  .arch-node .node-name  { font-size: 13px; font-weight: 500; color: var(--text); }
+  .arch-node .node-badge {
+    font-size: 9px; margin-top: 4px;
+    padding: 2px 6px; border-radius: 4px;
+    background: var(--accent)22; color: var(--accent);
+  }
+  .arch-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 0 8px;
+  }
+  .arch-arrow .arrow-line {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, var(--accent) 50%, transparent);
+    position: relative;
+  }
+  .arch-arrow .arrow-label { font-size: 9px; color: var(--muted); font-family: var(--mono); }
+
+  /* Lock queue table */
+  .log-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .log-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  .log-table th {
+    color: var(--muted); font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .log-table td { padding: 8px 12px; border-bottom: 1px solid #ffffff08; }
+  .log-table tr:hover td { background: var(--surface2); }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; letter-spacing: 0.5px;
+  }
+  .badge-read  { background: #63b3ed18; color: var(--accent); border: 1px solid #63b3ed33; }
+  .badge-write { background: #f6ad5518; color: var(--accent4); border: 1px solid #f6ad5533; }
+  .badge-ok    { background: #68d39118; color: var(--accent2); }
+  .badge-fail  { background: #fc818118; color: var(--accent3); }
+  .wait-bar-bg { height: 4px; background: var(--surface2); border-radius: 2px; width: 80px; display: inline-block; vertical-align: middle; margin-left: 6px; }
+  .wait-bar    { height: 100%; border-radius: 2px; background: var(--accent); max-width: 100%; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; }
+  .tab {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    cursor: pointer; border: 1px solid transparent;
+    color: var(--muted); font-family: var(--mono);
+    background: none; transition: all 0.15s;
+  }
+  .tab.active { background: var(--accent)22; border-color: var(--accent)55; color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); border-color: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🏛</div>
+    <div>
+      <div class="logo-text">C2PL Digital Banking</div>
+      <div class="logo-sub">CENTRALIZED 2-PHASE LOCKING · PROJECT #21</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="pulse"></div>
+    GLM ONLINE · 5 BRANCHES
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI row -->
+  <div class="section-title">System Metrics</div>
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#63b3ed">
+      <div class="kpi-label">TOTAL ACCOUNTS</div>
+      <div class="kpi-value">1,000</div>
+      <div class="kpi-sub">Across 5 branches</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#68d391">
+      <div class="kpi-label">MAX THROUGHPUT</div>
+      <div class="kpi-value">0.1K</div>
+      <div class="kpi-sub">TPS @ 20 concurrent</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#f6ad55">
+      <div class="kpi-label">AVG GLM WAIT</div>
+      <div class="kpi-value">818.8</div>
+      <div class="kpi-sub">ms peak (100 conc.)</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#fc8181">
+      <div class="kpi-label">ABORT RATE</div>
+      <div class="kpi-value">0.0%</div>
+      <div class="kpi-sub">Max at 10 concurrent</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#b794f4">
+      <div class="kpi-label">TRANSACTIONS RUN</div>
+      <div class="kpi-value">1,800</div>
+      <div class="kpi-sub">Total across 6 runs</div>
+    </div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="section-title">Bottleneck Analysis — GLM Under Load</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">⚡ GLM Wait Time vs Concurrency</div>
+      <div class="chart-title-sub">Bottleneck effect of single lock manager</div>
+      <div class="chart-wrap">
+        <canvas id="waitChart" role="img" aria-label="Line chart showing GLM wait time in milliseconds at different concurrency levels from 10 to 100 transactions">GLM wait time data: 10→0.013ms, 20→0.111ms, 30→0.055ms, 50→0.229ms, 75→0.21ms, 100→0.153ms</canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📈 Throughput vs Concurrency</div>
+      <div class="chart-title-sub">Transactions per second as load increases</div>
+      <div class="chart-wrap">
+        <canvas id="tpsChart" role="img" aria-label="Bar chart showing transactions per second at concurrency 10 through 100">TPS: 10→3817, 20→6869, 30→8279, 50→8731, 75→9715, 100→10564</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wide chart -->
+  <div class="chart-wide">
+    <div class="chart-title">🔒 Lock Contention Profile — Success vs Abort Rate</div>
+    <div class="chart-title-sub">Transaction outcomes per concurrency level</div>
+    <div class="chart-wrap">
+      <canvas id="successChart" role="img" aria-label="Grouped bar chart of success and abort rates at each concurrency level">Success rates: 99.5%, 99%, 97%, 98%, 100%, 97.5%. Abort rates inverse.</canvas>
+    </div>
+  </div>
+
+  <!-- Architecture diagram -->
+  <div class="section-title">System Architecture — C2PL</div>
+  <div class="arch-card">
+    <div class="chart-title">Centralized 2-Phase Locking Architecture</div>
+    <div class="chart-title-sub">All branches route lock requests through a single Global Lock Manager</div>
+    <div class="arch-diagram">
+      <!-- Branch nodes left -->
+      <div class="arch-col">
+        <div class="arch-node">
+          <div class="node-label">BRANCH NODE</div>
+          <div class="node-name">BR001-HCM</div>
+          <div class="node-badge">Ho Chi Minh</div>
+        </div>
+        <div class="arch-node">
+          <div class="node-label">BRANCH NODE</div>
+          <div class="node-name">BR002-HN</div>
+          <div class="node-badge">Hà Nội</div>
+        </div>
+        <div class="arch-node">
+          <div class="node-label">BRANCH NODE</div>
+          <div class="node-name">BR003-DN</div>
+          <div class="node-badge">Đà Nẵng</div>
+        </div>
+      </div>
+      <!-- Arrow -->
+      <div class="arch-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">LOCK REQUEST</div>
+      </div>
+      <!-- GLM center -->
+      <div class="arch-col">
+        <div class="arch-node glm">
+          <div class="node-label">GLOBAL LOCK MANAGER</div>
+          <div class="node-name" style="font-size:15px;color:var(--accent)">GLM</div>
+          <div class="node-badge">Centralized • Single Process</div>
+        </div>
+      </div>
+      <!-- Arrow right -->
+      <div class="arch-arrow">
+        <div class="arrow-line" style="background:linear-gradient(90deg,transparent,var(--accent))"></div>
+        <div class="arrow-label">GRANT/DENY</div>
+      </div>
+      <!-- More branches right -->
+      <div class="arch-col">
+        <div class="arch-node">
+          <div class="node-label">BRANCH NODE</div>
+          <div class="node-name">BR004-CT</div>
+          <div class="node-badge">Cần Thơ</div>
+        </div>
+        <div class="arch-node">
+          <div class="node-label">BRANCH NODE</div>
+          <div class="node-name">BR005-HP</div>
+          <div class="node-badge">Hải Phòng</div>
+        </div>
+      </div>
+    </div>
+    <!-- Lock matrix -->
+    <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: 8px; display: flex; gap: 2rem; justify-content: center; font-family: var(--mono); font-size: 12px;">
+      <div>
+        <div style="color:var(--muted); font-size:10px; margin-bottom:6px">LOCK COMPATIBILITY MATRIX</div>
+        <table style="border-collapse:collapse; color: var(--text)">
+          <tr><th style="padding:4px 10px;color:var(--muted);font-weight:400;font-size:11px"></th><th style="padding:4px 10px;color:var(--accent);font-size:11px">Held: READ</th><th style="padding:4px 10px;color:var(--accent4);font-size:11px">Held: WRITE</th></tr>
+          <tr><td style="padding:4px 10px;color:var(--accent)">Req: READ</td><td style="padding:4px 10px;color:var(--accent2);text-align:center">✓ YES</td><td style="padding:4px 10px;color:var(--accent3);text-align:center">✗ NO</td></tr>
+          <tr><td style="padding:4px 10px;color:var(--accent4)">Req: WRITE</td><td style="padding:4px 10px;color:var(--accent3);text-align:center">✗ NO</td><td style="padding:4px 10px;color:var(--accent3);text-align:center">✗ NO</td></tr>
+        </table>
+      </div>
+      <div style="border-left: 1px solid var(--border); padding-left: 2rem;">
+        <div style="color:var(--muted); font-size:10px; margin-bottom:6px">TRANSACTION TYPES</div>
+        <div style="color:var(--text); margin-bottom:4px">TRANSFER → 2× WRITE locks (ordered)</div>
+        <div style="color:var(--text); margin-bottom:4px">INQUIRY  → 1× READ lock</div>
+        <div style="color:var(--text)">DEPOSIT  → 1× WRITE lock</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock queue log -->
+  <div class="section-title">Lock Queue Log (Sample — Last 100 concurrent run)</div>
+  <div class="log-card">
+    <div class="chart-title">📋 GLM Lock Request Queue</div>
+    <div class="chart-title-sub">Showing wait time per transaction · Deliverable requirement</div>
+    <div style="overflow-x: auto; margin-top: 1rem;">
+      <table class="log-table" id="logTable">
+        <thead>
+          <tr>
+            <th>TX_ID</th>
+            <th>ACCOUNT</th>
+            <th>LOCK TYPE</th>
+            <th>BRANCH</th>
+            <th>WAIT TIME</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+<tr><td style='color:var(--accent)'>TX-BR003-DN-31B8EC</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR003-DN</td><td>2315.4ms<span class='wait-bar-bg'><span class='wait-bar' style='width:100%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-1280AC</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>2273.3ms<span class='wait-bar-bg'><span class='wait-bar' style='width:98%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-2D69D4</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>2232.6ms<span class='wait-bar-bg'><span class='wait-bar' style='width:96%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-A389F3</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>2183.1ms<span class='wait-bar-bg'><span class='wait-bar' style='width:94%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR005-HP-DB743E</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR005-HP</td><td>2171.7ms<span class='wait-bar-bg'><span class='wait-bar' style='width:93%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR005-HP-D402D4</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR005-HP</td><td>2128.1ms<span class='wait-bar-bg'><span class='wait-bar' style='width:91%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR005-HP-77BB27</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR005-HP</td><td>2014.0ms<span class='wait-bar-bg'><span class='wait-bar' style='width:86%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-C2CFDB</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1996.8ms<span class='wait-bar-bg'><span class='wait-bar' style='width:86%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR003-DN-CD25A4</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR003-DN</td><td>1996.7ms<span class='wait-bar-bg'><span class='wait-bar' style='width:86%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR003-DN-517B3D</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR003-DN</td><td>1986.0ms<span class='wait-bar-bg'><span class='wait-bar' style='width:85%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-52D0D1</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>1968.1ms<span class='wait-bar-bg'><span class='wait-bar' style='width:85%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-D465D9</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>1964.3ms<span class='wait-bar-bg'><span class='wait-bar' style='width:84%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR003-DN-62F836</td><td>ACC0001</td><td><span class='badge badge-write'>WRITE</span></td><td>BR003-DN</td><td>1959.7ms<span class='wait-bar-bg'><span class='wait-bar' style='width:84%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-116C9C</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>1459.5ms<span class='wait-bar-bg'><span class='wait-bar' style='width:63%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-056589</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>1431.3ms<span class='wait-bar-bg'><span class='wait-bar' style='width:61%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-B122A3</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>1420.8ms<span class='wait-bar-bg'><span class='wait-bar' style='width:61%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-6F765D</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>1404.5ms<span class='wait-bar-bg'><span class='wait-bar' style='width:60%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-93C44A</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>1377.3ms<span class='wait-bar-bg'><span class='wait-bar' style='width:59%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-AE16A0</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>1350.1ms<span class='wait-bar-bg'><span class='wait-bar' style='width:58%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-F2F357</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1265.4ms<span class='wait-bar-bg'><span class='wait-bar' style='width:54%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-C08DEE</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1256.2ms<span class='wait-bar-bg'><span class='wait-bar' style='width:54%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-E3FE39</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1250.3ms<span class='wait-bar-bg'><span class='wait-bar' style='width:53%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-673950</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1247.7ms<span class='wait-bar-bg'><span class='wait-bar' style='width:53%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR005-HP-7E6752</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR005-HP</td><td>1233.0ms<span class='wait-bar-bg'><span class='wait-bar' style='width:53%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR001-HCM-6E2418</td><td>ACC0002</td><td><span class='badge badge-write'>WRITE</span></td><td>BR001-HCM</td><td>1063.6ms<span class='wait-bar-bg'><span class='wait-bar' style='width:45%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-6C9D6E</td><td>ACC0003</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>838.0ms<span class='wait-bar-bg'><span class='wait-bar' style='width:36%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR003-DN-4CFD0F</td><td>ACC0003</td><td><span class='badge badge-write'>WRITE</span></td><td>BR003-DN</td><td>599.4ms<span class='wait-bar-bg'><span class='wait-bar' style='width:25%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR002-HN-25132D</td><td>ACC0003</td><td><span class='badge badge-write'>WRITE</span></td><td>BR002-HN</td><td>559.9ms<span class='wait-bar-bg'><span class='wait-bar' style='width:24%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-AB621D</td><td>ACC0003</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>545.8ms<span class='wait-bar-bg'><span class='wait-bar' style='width:23%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+<tr><td style='color:var(--accent)'>TX-BR004-CT-8CC8F5</td><td>ACC0003</td><td><span class='badge badge-write'>WRITE</span></td><td>BR004-CT</td><td>504.9ms<span class='wait-bar-bg'><span class='wait-bar' style='width:21%;background:var(--accent4)'></span></span></td><td><span class='badge badge-ok'>GRANTED</span></td></tr>
+</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Milestones -->
+  <div class="section-title">Project Milestones</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:2rem">
+    <div class="chart-card" style="border-color: var(--accent2)44;">
+      <div style="font-size:11px;color:var(--accent2);font-family:var(--mono);margin-bottom:6px">WEEK 5 · MILESTONE 1</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">Environment & Data Setup</div>
+      <div style="font-size:12px;color:var(--muted)">CSV with 1,000 accounts generated. 5-node simulation configured. GLM process initialized. Data fragmentation by BranchID complete.</div>
+    </div>
+    <div class="chart-card" style="border-color: var(--accent4)44;">
+      <div style="font-size:11px;color:var(--accent4);font-family:var(--mono);margin-bottom:6px">WEEK 8 · MILESTONE 2</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">Core GLM Operational</div>
+      <div style="font-size:12px;color:var(--muted)">Read/Write lock table implemented. FIFO wait queue for blocked transactions. Lock request/release API for branch nodes. 2PL growing/shrinking phases enforced.</div>
+    </div>
+    <div class="chart-card" style="border-color: var(--accent3)44;">
+      <div style="font-size:11px;color:var(--accent3);font-family:var(--mono);margin-bottom:6px">WEEK 12 · MILESTONE 3</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">Benchmarking Complete</div>
+      <div style="font-size:12px;color:var(--muted)">Bottleneck analysis 10→100 concurrency. Lock queue log with per-transaction wait time. Failure simulation (GLM timeout). Full report referencing Özsu & Valduriez.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>C2PL Digital Banking · Category 3: Distributed Concurrency Control · Project #21</span>
+  <span>Dataset: 1,000 accounts · 5 sites · Python 3 · SQLite</span>
+</div>
+
+<script>
+// Benchmark data - AUTO UPDATED by benchmark.py
+const concurrency = [10, 20, 30, 50, 75, 100];
+const waitMs      = [54.98, 115.788, 236.098, 393.271, 716.341, 980.519];
+const tps         = [123, 131, 104, 99, 79, 74];
+const successPct  = [100.0, 100.0, 100.0, 100.0, 100.0, 100.0];
+const abortPct    = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+const GRID = '#1a2235';
+const TICK = '#4a5568';
+
+// Chart: Wait Time
+new Chart(document.getElementById('waitChart'), {
+  type: 'line',
+  data: {
+    labels: concurrency.map(c => c + ' tx'),
+    datasets: [{
+      label: 'Avg Wait (ms)',
+      data: waitMs,
+      borderColor: '#63b3ed',
+      backgroundColor: '#63b3ed18',
+      borderWidth: 2,
+      pointBackgroundColor: '#63b3ed',
+      pointRadius: 5,
+      fill: true,
+      tension: 0.3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" } } },
+      y: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" }, callback: v => v.toFixed(3) + 'ms' } }
+    }
+  }
+});
+
+// Chart: TPS
+new Chart(document.getElementById('tpsChart'), {
+  type: 'bar',
+  data: {
+    labels: concurrency.map(c => c + ' tx'),
+    datasets: [{
+      label: 'TPS',
+      data: tps,
+      backgroundColor: concurrency.map((c, i) => i === tps.indexOf(Math.max(...tps)) ? '#68d391' : '#68d39155'),
+      borderColor: '#68d391',
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" } } },
+      y: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" }, callback: v => v + ' TPS' } }
+    }
+  }
+});
+
+// Chart: Success vs Abort
+new Chart(document.getElementById('successChart'), {
+  type: 'bar',
+  data: {
+    labels: concurrency.map(c => c + ' concurrent'),
+    datasets: [
+      {
+        label: 'Success %',
+        data: successPct,
+        backgroundColor: '#68d39166',
+        borderColor: '#68d391',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+      {
+        label: 'Abort %',
+        data: abortPct,
+        backgroundColor: '#fc818166',
+        borderColor: '#fc8181',
+        borderWidth: 1,
+        borderRadius: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: '#718096', font: { family: "'IBM Plex Mono'", size: 11 }, boxWidth: 12 }
+      }
+    },
+    scales: {
+      x: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" } } },
+      y: { grid: { color: GRID }, ticks: { color: TICK, font: { family: "'IBM Plex Mono'" }, callback: v => v + '%' }, max: 105 }
+    }
+  }
+});
+
+// ── Lock log table ───────────────────────────────────────────────────────
+const branches = ['BR001-HCM','BR002-HN','BR003-DN','BR004-CT','BR005-HP'];
+
+</script>
+</body>
+</html>

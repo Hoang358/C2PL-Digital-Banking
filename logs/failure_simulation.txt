@@ -1,0 +1,43 @@
+C2PL FAILURE SIMULATION REPORT
+============================================================
+
+Scenario : GLM_CRASH
+Finding  : GLM crash causes all in-flight transactions to abort. On restart, branches retry successfully.
+Events   : [
+          {
+                    "time_s": 0.5,
+                    "event": "GLM_CRASH",
+                    "detail": "GLM process terminated"
+          },
+          {
+                    "time_s": 0.7,
+                    "event": "GLM_RESTART",
+                    "detail": "New GLM initialized, all locks cleared"
+          }
+]
+
+------------------------------------------------------------
+
+Scenario : BRANCH_FAILURE
+Finding  : Branch failure is isolated. GLM cleans orphaned locks. Other branches continue unaffected.
+Events   : [
+          {
+                    "time_s": 0.3,
+                    "event": "BR003_DN_FAILURE",
+                    "detail": "Branch node BR003-DN process killed"
+          },
+          {
+                    "time_s": 0.31,
+                    "event": "ORPHAN_LOCK_CLEANUP",
+                    "detail": "0 orphaned transactions aborted, locks released"
+          }
+]
+
+------------------------------------------------------------
+
+Scenario : DEADLOCK_PREVENTION
+Finding  : Alphabetical lock ordering eliminates circular wait condition (deadlock). Zero deadlocks detected.
+Events   : []
+
+------------------------------------------------------------
+

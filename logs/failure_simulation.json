@@ -1,0 +1,77 @@
+[
+  {
+    "scenario": "GLM_CRASH",
+    "events": [
+      {
+        "time_s": 0.5,
+        "event": "GLM_CRASH",
+        "detail": "GLM process terminated"
+      },
+      {
+        "time_s": 0.7,
+        "event": "GLM_RESTART",
+        "detail": "New GLM initialized, all locks cleared"
+      }
+    ],
+    "before_crash": {
+      "committed": 3508,
+      "aborted": 73
+    },
+    "after_restart": {
+      "committed": 15,
+      "aborted": 0
+    },
+    "finding": "GLM crash causes all in-flight transactions to abort. On restart, branches retry successfully."
+  },
+  {
+    "scenario": "BRANCH_FAILURE",
+    "failed_branch": "BR003-DN",
+    "events": [
+      {
+        "time_s": 0.3,
+        "event": "BR003_DN_FAILURE",
+        "detail": "Branch node BR003-DN process killed"
+      },
+      {
+        "time_s": 0.31,
+        "event": "ORPHAN_LOCK_CLEANUP",
+        "detail": "0 orphaned transactions aborted, locks released"
+      }
+    ],
+    "orphan_locks_cleaned": 0,
+    "branch_results": {
+      "BR001-HCM": {
+        "committed": 29,
+        "aborted": 1,
+        "online": true
+      },
+      "BR002-HN": {
+        "committed": 30,
+        "aborted": 0,
+        "online": true
+      },
+      "BR003-DN": {
+        "committed": 30,
+        "aborted": 0,
+        "online": false
+      },
+      "BR004-CT": {
+        "committed": 30,
+        "aborted": 0,
+        "online": true
+      },
+      "BR005-HP": {
+        "committed": 30,
+        "aborted": 0,
+        "online": true
+      }
+    },
+    "finding": "Branch failure is isolated. GLM cleans orphaned locks. Other branches continue unaffected."
+  },
+  {
+    "scenario": "DEADLOCK_PREVENTION",
+    "pairs_tested": 8,
+    "committed": 8,
+    "finding": "Alphabetical lock ordering eliminates circular wait condition (deadlock). Zero deadlocks detected."
+  }
+]

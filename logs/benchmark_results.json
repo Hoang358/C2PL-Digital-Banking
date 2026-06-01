@@ -1,0 +1,62 @@
+[
+  {
+    "n_concurrent": 10,
+    "n_transactions": 300,
+    "elapsed_s": 2.432,
+    "throughput_tps": 123.37,
+    "success_rate": 100.0,
+    "avg_wait_ms": 54.98,
+    "avg_duration_ms": 8.106,
+    "aborts": 0
+  },
+  {
+    "n_concurrent": 20,
+    "n_transactions": 300,
+    "elapsed_s": 2.282,
+    "throughput_tps": 131.49,
+    "success_rate": 100.0,
+    "avg_wait_ms": 115.788,
+    "avg_duration_ms": 7.605,
+    "aborts": 0
+  },
+  {
+    "n_concurrent": 30,
+    "n_transactions": 300,
+    "elapsed_s": 2.873,
+    "throughput_tps": 104.42,
+    "success_rate": 100.0,
+    "avg_wait_ms": 236.098,
+    "avg_duration_ms": 9.577,
+    "aborts": 0
+  },
+  {
+    "n_concurrent": 50,
+    "n_transactions": 300,
+    "elapsed_s": 3.007,
+    "throughput_tps": 99.75,
+    "success_rate": 100.0,
+    "avg_wait_ms": 393.271,
+    "avg_duration_ms": 10.025,
+    "aborts": 0
+  },
+  {
+    "n_concurrent": 75,
+    "n_transactions": 300,
+    "elapsed_s": 3.789,
+    "throughput_tps": 79.18,
+    "success_rate": 100.0,
+    "avg_wait_ms": 716.341,
+    "avg_duration_ms": 12.629,
+    "aborts": 0
+  },
+  {
+    "n_concurrent": 100,
+    "n_transactions": 300,
+    "elapsed_s": 4.011,
+    "throughput_tps": 74.8,
+    "success_rate": 100.0,
+    "avg_wait_ms": 980.519,
+    "avg_duration_ms": 13.368,
+    "aborts": 0
+  }
+]
