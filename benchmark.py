@@ -21,25 +21,45 @@ def pick_accounts(hot_ratio=0.8):
         return random.choice(HOT_ACCOUNTS), random.choice(HOT_ACCOUNTS)
     return random.choice(COLD_ACCOUNTS), random.choice(COLD_ACCOUNTS)
 
+def generate_workload():
+    workload = []
 
-def run_one_transaction(glm, branch):
-    src, dst = pick_accounts()
+    for _ in range(TX_PER_RUN):
+        if random.random() < 0.8:
+            src = random.choice(HOT_ACCOUNTS)
+            dst = random.choice(HOT_ACCOUNTS)
+        else:
+            src = random.choice(COLD_ACCOUNTS)
+            dst = random.choice(COLD_ACCOUNTS)
+
+        workload.append((src, dst))
+
+    return workload
+
+def run_one_transaction(glm, branch, src, dst):
     items = sorted({src, dst})
+
     tx_id = glm.begin_transaction(branch)
+
     granted = all(
         glm.request_lock(tx_id, item, LockType.WRITE, timeout_s=10.0)
         for item in items
     )
+
     if granted:
         time.sleep(LOCK_HOLD_MS + random.uniform(0, LOCK_HOLD_MS))
         glm.release_all_locks(tx_id, commit=True)
     else:
         glm.release_all_locks(tx_id, commit=False)
+
     tx = glm.tx_table.get(tx_id)
-    return {"success": granted, "wait_ms": tx.total_wait_ms if tx else 0.0}
 
+    return {
+        "success": granted,
+        "wait_ms": tx.total_wait_ms if tx else 0.0
+    }
 
-def run_level(n_concurrent):
+def run_level(n_concurrent, workload):
     glm = GlobalLockManager()
     results = []
     r_lock = threading.Lock()
@@ -50,10 +70,16 @@ def run_level(n_concurrent):
         branch = random.choice(BRANCHES)
         while True:
             with c_lock:
-                if counter["done"] >= TX_PER_RUN:
+                if counter["done"] >= len(workload):
                     return
+
+                idx = counter["done"]
                 counter["done"] += 1
-            r = run_one_transaction(glm, branch)
+
+            src, dst = workload[idx]
+
+            r = run_one_transaction(glm, branch, src, dst)
+
             with r_lock:
                 results.append(r)
 
@@ -68,7 +94,10 @@ def run_level(n_concurrent):
     tps      = len(results) / max(0.001, elapsed)
 
     # Lấy lock log thật từ GLM
-    raw_log = glm.get_lock_queue_log()[:100]
+    raw_log = sorted(
+        glm.get_lock_queue_log(),
+        key=lambda x: x["requested_at"]
+    )[:100]
     lock_log = []
     for r in raw_log:
         lock_log.append({
@@ -78,6 +107,7 @@ def run_level(n_concurrent):
             "branch_id": r["branch_id"],
             "wait_ms":   round(r["wait_time_ms"], 1),
             "granted":   r["granted"],
+            "requested_at": r["requested_at"],
         })
 
     return {
@@ -103,9 +133,10 @@ def run_benchmark():
 
     levels = [10, 20, 30, 50, 75, 100]
     all_results = []
-
+    
+    workload = generate_workload()
     for n in levels:
-        r = run_level(n)
+        r = run_level(n, workload)
         all_results.append(r)
         print("%12d %8.1f %14.1f %9.1f%% %8d" % (
             n, r["throughput_tps"], r["avg_wait_ms"], r["success_rate"], r["aborts"]))
@@ -180,7 +211,10 @@ def update_dashboard(all_results):
     html = html[:start_idx] + new_js + "\n\n" + end_marker + html[end_idx + len(end_marker):]
 
     # --- Inject lock log thật vào bảng ---
-    last_log = all_results[-1].get("lock_log", [])
+    last_log = sorted(
+        all_results[-1].get("lock_log", []),
+        key=lambda x: x.get("requested_at", 0)
+    )
     if last_log:
         max_w = max((r["wait_ms"] for r in last_log), default=1) or 1
         rows_html = "\n"
