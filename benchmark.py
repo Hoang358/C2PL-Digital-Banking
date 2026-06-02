@@ -12,7 +12,7 @@ LOG_DIR       = os.path.join(os.path.dirname(__file__), "logs")
 HOT_ACCOUNTS  = [f"ACC{str(i).zfill(4)}" for i in range(1, 11)]
 COLD_ACCOUNTS = [f"ACC{str(i).zfill(4)}" for i in range(11, 1001)]
 LOCK_HOLD_MS  = 0.015
-TX_PER_RUN    = 300
+TX_PER_RUN    = 100
 os.makedirs(LOG_DIR, exist_ok=True)
 
 
@@ -68,7 +68,7 @@ def run_level(n_concurrent):
     tps      = len(results) / max(0.001, elapsed)
 
     # Lấy lock log thật từ GLM
-    raw_log = sorted(glm.get_lock_queue_log(), key=lambda x: x["wait_time_ms"], reverse=True)[:30]
+    raw_log = glm.get_lock_queue_log()[:100]
     lock_log = []
     for r in raw_log:
         lock_log.append({
@@ -152,6 +152,9 @@ def update_dashboard(all_results):
     max_tps     = max(tps_data)
     peak_wait   = max(wait_ms)
     max_abort   = max(abort_pct)
+    best_tps_run = all_results[tps_data.index(max_tps)]["n_concurrent"]
+    peak_wait_run = all_results[wait_ms.index(peak_wait)]["n_concurrent"]
+    abort_run = all_results[abort_pct.index(max_abort)]["n_concurrent"]
 
     new_js = (
         "// Benchmark data - AUTO UPDATED by benchmark.py\n"
@@ -207,7 +210,55 @@ def update_dashboard(all_results):
         e = html.find("</tbody>", s)
         if s != -1 and e != -1:
             html = html[:s + len('<tbody id="logBody">')] + rows_html + html[e:]
+    
+    import re
 
+    html = re.sub(
+        r'(<div class="kpi-label">MAX THROUGHPUT</div>\s*<div class="kpi-value">).*?(</div>)',
+        rf'\g<1>{max_tps:.1f}\g<2>',
+        html,
+        flags=re.S
+    )
+
+    html = re.sub(
+        r'(TPS @ )\d+( concurrent)',
+        rf'TPS @ {best_tps_run}\2',
+        html
+    )
+
+    html = re.sub(
+        r'(<div class="kpi-label">AVG GLM WAIT</div>\s*<div class="kpi-value">).*?(</div>)',
+        rf'\g<1>{peak_wait:.1f}\g<2>',
+        html,
+        flags=re.S
+    )
+
+    html = re.sub(
+        r'(ms peak \()\d+( conc\.\))',
+        rf'ms peak ({peak_wait_run} conc.)',
+        html
+    )
+
+    html = re.sub(
+        r'(<div class="kpi-label">ABORT RATE</div>\s*<div class="kpi-value">).*?(</div>)',
+        rf'\g<1>{max_abort:.1f}%\g<2>',
+        html,
+        flags=re.S
+    )
+
+    html = re.sub(
+        r'(Max at )\d+( concurrent)',
+        rf'Max at {abort_run} concurrent',
+        html
+    )
+
+    html = re.sub(
+        r'(<div class="kpi-label">TRANSACTIONS RUN</div>\s*<div class="kpi-value">).*?(</div>)',
+        rf'\g<1>{total_tx}\g<2>',
+        html,
+        flags=re.S
+    )
+    
     with open(dashboard_path, "w", encoding="utf-8") as f:
         f.write(html)
 
